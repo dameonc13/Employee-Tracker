@@ -1,7 +1,10 @@
-var mysql = require("mysql");
-var inquirer = require("inquirer");
+const mysql = require("mysql");
+const inquirer = require("inquirer");
+const cTable = require('console.table');
+//const  start = require("npm-start-command")
 
 const user = require('./user.js');
+var data = []
 
 
 var connection = mysql.createConnection({
@@ -28,7 +31,7 @@ function runSearch() {
     .prompt({
       name: "action",
       type: "list",
-      message: "What would you like to do?",
+      message: "\n \n What would you like to do?",
       choices: [
         "View all Employees",
         "See all employees by department",
@@ -43,31 +46,31 @@ function runSearch() {
     .then(function (answer) {
       switch (answer.action) {
         case "View all Employees":
-          artistSearch();
+          viewAllEmployees();
           break;
 
         case "See all employees by department":
-          multiSearch();
+          viewAllByDepartment();
           break;
 
         case "Add Employee":
-          rangeSearch();
+          addEmployee();
           break;
 
         case "Remove Employee":
-          songSearch();
+          rmvEmployee();
           break;
 
         case "Update Employee Role":
-          songSearch();
+          updateRole();
           break;
 
         case "View All Role":
-          songSearch();
+          viewAllRole();
           break;
 
         case "Add Role":
-          songSearch();
+          addRole();
           break;
 
         case "exit":
@@ -76,3 +79,110 @@ function runSearch() {
       }
     });
 }
+
+function viewAllEmployees() {
+  var query = "SELECT employee_id ,first_name, last_name, title, salary, department_name  FROM employee INNER JOIN employee_role on  employee.role_id = employee_role.id INNER JOIN department  on employee_role.department_id = department.id ORDER BY employee_id ";
+  connection.query(query, function (err, res) {
+    if (err) throw err;
+    for (var i = 0; i < res.length; i++) {
+      data.push({
+        id: res[i].employee_id,
+        first_name: res[i].first_name,
+        last_name: res[i].last_name,
+        title: res[i].title,
+        salary: res[i].salary,
+        department: res[i].department_name
+      });
+    }
+    console.table(data);
+    data = []
+    runSearch();
+  });
+
+}
+
+
+
+
+
+
+function viewAllByDepartment() {
+  inquirer
+    .prompt([
+      {
+        name: "department_name",
+        type: "list",
+        choices: [
+          "Accounting",
+          "Information Technology",
+          "Marketing",
+          "Sales",
+          "exit"],
+          message: "Select Department: ",
+      
+      },
+    ])
+    .then(function(answer) {
+      switch (answer.action) {case "exit":
+      connection.end();
+      break;
+  }
+      var query = "SELECT employee_id ,first_name, last_name, title, salary, department_name FROM employee INNER JOIN employee_role on  employee.role_id = employee_role.id INNER JOIN department  on employee_role.department_id = department.id WHERE ?"; 
+      connection.query(query,  { department_name: answer.department_name }, function(err, res) {
+        if (err) throw err;
+        for (var i = 0; i < res.length; i++) {
+          data.push({
+            id: res[i].employee_id,
+            first_name: res[i].first_name,
+            last_name: res[i].last_name,
+            title: res[i].title,
+            salary: res[i].salary,
+            department: res[i].department_name
+          });
+        }
+        console.table(data);
+        data = []
+        runSearch();
+      });
+    });
+}
+
+
+
+function addEmployee() {
+  inquirer
+    .prompt({
+      name: "so",
+      type: "input",
+      message: "Enter Employee First Name"
+    })
+    inquirer
+    .prompt({
+      name: "song",
+      type: "input",
+      message: "Enter Employee Last Name"
+    })
+    .prompt({
+      name: "song",
+      type: "input",
+      message: "Enter Employee Last Name"
+    })
+    .then(function(answer) {
+      console.log(answer.song);
+      connection.query("SELECT * FROM top5000 WHERE ?", { song: answer.song }, function(err, res) {
+        if (err) throw err;
+        console.log(
+          "Position: " +
+            res[0].position +
+            " || Song: " +
+            res[0].song +
+            " || Artist: " +
+            res[0].artist +
+            " || Year: " +
+            res[0].year
+        );
+        runSearch();
+      });
+    });
+}
+
