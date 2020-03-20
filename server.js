@@ -284,8 +284,108 @@ function addEmployee(){
         });
 }*/
 
+function addRole(){
+  connection.query("SELECT * FROM Department", function(err, results) {
+    if (err) throw err;
+    inquirer
+        .prompt([
+        {
+            name: "title",
+            type: "input",
+            message: "Please enter the Role you want to add..",
+           
+        },
+        {
+            name: "salary",
+            type: "input",
+            message: "Enter the salary for this role..",
+          
+        },
+        {
+            name: "deptName",
+            type: "rawlist",
+            choices: function (){
+                var choices = [];
+                for (var i = 0; i < results.length; i++) {
+                    choices.push(results[i].department_name);
+                }
+                return choices;
+            },
+             message: "Please select the Department assigned.."
+        }
+        ])
+        .then(function(answer){
+          connection.query("SELECT id from Department where department_name = ?",[answer.deptName],
+            function(error,res){
+            if (error) throw error;
+            connection.query(
+            "INSERT INTO employee_role SET ?",
+            {
+              title: answer.title,
+              salary: answer.salary,
+              department_id: res[0].id
+            },
+              function(err){
+                if (err) throw err;
+                console.log(`Role ${answer.roleName} is added successfully`);
+                viewAllRole()
+                runSearch()
+              }    
+            );    
+          });
+        });
+  });
+}
 
 
+function updateRole(){
+    connection.query(`SELECT  title, r.id roleId, e.id empId, first_name, last_name
+        FROM Role r LEFT JOIN Employee e ON e.role_id = r.id`, function(err, results) {
+      if (err) throw err;
+      inquirer
+          .prompt([
+          {
+              name: "empName",
+              type: "rawlist",
+              choices: function (){
+                var choiceArray = [];
+                for (var i = 0; i < results.length; i++) {
+                    if (results[i].empId !== null)
+                    choiceArray.push(results[i].first_name + " " + results[i].last_name);
+                }
+                return choiceArray;
+              },
+             message: "Please select the Employee whose role need to be updated.."
+          },
+          {
+              name: "roleName",
+              type: "rawlist",
+              choices: function (){
+                  var choice = [];
+                  for (var i = 0; i < results.length; i++) {
+                    choice.push(results[i].title);
+                  }
+                  var choiceDist = [...new Set(choice)];
+                  return choiceDist;
+              },
+               message: "Please select the Role to assign.."
+          }
+          ])
+          .then(function(answer){
+              const query = `UPDATE Employee SET role_id =
+                (SELECT id FROM Role WHERE title = ?), manager_id = null 
+                 WHERE first_name= ? AND last_name= ?`;
+              connection.query(query,
+                [answer.roleName, answer.empName.split(" ")[0], answer.empName.split(" ").splice(1).join(" ")],
+                function(error){
+                  if (error) throw error;
+                    console.log(`Updated ${answer.empName}'s Role to ${answer.roleName} successfully`);
+                    viewAll();
+                }    
+              );    
+            });
+          });
+}
 
 /*
 function updateEmpMgr(){
@@ -344,7 +444,6 @@ function updateEmpMgr(){
         });
 
 } */
-
 
 /*
 function deleteRole(){
